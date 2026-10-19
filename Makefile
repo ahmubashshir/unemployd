@@ -9,6 +9,7 @@ CFLAGS    += -Os -s -ffreestanding \
 				-fno-asynchronous-unwind-tables \
 				-fno-unwind-tables -fno-pie \
 				-ffunction-sections -fdata-sections \
+				-fno-builtin \
 				-Wa,--noexecstack
 
 LDFLAGS   += -Wl,--gc-sections -static -no-pie -fuse-ld=bfd \
@@ -16,7 +17,6 @@ LDFLAGS   += -Wl,--gc-sections -static -no-pie -fuse-ld=bfd \
 				-Wl,--build-id=none \
 				-Wl,-z,now -Wl,-T,discard.ld
 LOADLIBES += -l:crt1.o
-LDLIBS    += -lc
 
 all: $(BIN).stripped
 

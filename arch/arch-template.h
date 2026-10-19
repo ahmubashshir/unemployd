@@ -1,8 +1,4 @@
-#ifndef __ARCH_SHIM_IMPL__
-#define __ARCH_SHIM_IMPL__
+#pragma once
 
-#error "Architecture Stub included!" // remove this in implementation header
-
-static inline void set_tls_ptr(void *ptr) {}
-
-#endif /* __ARCH_SHIM_IMPL__ */
+#error "Architecture Stub included!"
+// define any arch specific symbols needed by crt startup code here

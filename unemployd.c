@@ -1,31 +1,20 @@
-#define _GNU_SOURCE
-#include <errno.h>
-#include <signal.h>
-#include <sys/signalfd.h>
-#include <sys/syscall.h>
-#include <unistd.h>
-#include <stdint.h>
-
-#define SIGMASK(sig) (UINT64_C(1) << (sig - 1))
-typedef uint64_t sigmask_t;
+#include "common.h"
 
 int main(void)
 {
-	sigmask_t mask = SIGMASK(SIGTERM) | SIGMASK(SIGINT);
+	struct kernel_sigset_t mask = {};
+	sys_sigemptyset(&mask);
+	sys_sigaddset(&mask, SIGTERM);
+	sys_sigaddset(&mask, SIGINT);
 
-	if (syscall(SYS_rt_sigprocmask, SIG_BLOCK, &mask, 0, sizeof(mask)) < 0)
+	if (sys_sigprocmask(SIG_BLOCK, &mask, NULL) < 0)
 		return 1;
 
-	long fd = syscall(SYS_signalfd4, -1, &mask, sizeof(mask), SFD_CLOEXEC);
-	if (fd < 0)
-		return 1;
-
-	struct signalfd_siginfo si;
-	while(syscall(SYS_read, fd, &si, sizeof(si)) < 0
+	siginfo_t si = {};
+	while(sys_sigtimedwait(&mask, &si, NULL) < 0
 	      ? errno == EINTR
-	      : si.ssi_signo != SIGINT && si.ssi_signo != SIGTERM
+	      : si.si_signo != SIGINT && si.si_signo != SIGTERM
 	     );
 
-	syscall(SYS_close, fd);
 	return 0;
 }

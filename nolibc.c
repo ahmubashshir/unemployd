@@ -1,21 +1,7 @@
-/* with this... only safe glibc function is syscall */
-
-#include "arch.h"
+/* only syscall symbols from LSS are safe, avoid libc functions */
+#define _NOLIBC_IMPL
+#include "common.h"
 #include <stdint.h>
-
-#define TLS_SIZE 64
-
-static uintptr_t __tls_area__[TLS_SIZE] __attribute__((section(".tbss.tls_area"))); // tiny TLS block
-static void __tls_init(void)
-{
-	static int64_t  __errno_variable = 0;
-	extern uintptr_t tls_area[];
-
-	for (size_t i = 0; i < TLS_SIZE; i++)
-		tls_area[i] = (uintptr_t) &__errno_variable;
-
-	set_tls_ptr(&tls_area[TLS_SIZE / 2]);
-}
 
 NORETURN int
 __libc_start_main(
@@ -27,7 +13,22 @@ __libc_start_main(
     void (*rtld_fini) (void),
     void (* stack_end))
 {
-	__tls_init();
-	__exit(main(argc, argv, &argv[argc + 1]));
+	sys_exit_group(main(argc, argv, &argv[argc + 1]));
 	__builtin_unreachable();
+}
+
+void *memset(void *dest, int c, size_t n)
+{
+	unsigned char *p = (unsigned char *)dest;
+
+	while (n-- > 0)
+		*p++ = (unsigned char)c;
+
+	return dest;
+}
+
+int* __errno_location()
+{
+	static int _errno = 0;
+	return &_errno;
 }
