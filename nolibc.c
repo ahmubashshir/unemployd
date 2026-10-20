@@ -1,10 +1,9 @@
 /* only syscall symbols from LSS are safe, avoid libc functions */
-#define _NOLIBC_IMPL
 #include "common.h"
 #include <stdint.h>
 
-NORETURN int
-__libc_start_main(
+__attribute__((noreturn, used))
+int __libc_start_main(
     int (*main) (int, char * *, char * *),
     int argc,
     char **argv,

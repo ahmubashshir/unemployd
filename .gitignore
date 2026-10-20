@@ -3,6 +3,7 @@
 !*.c
 !*.ld
 !*.h
+!*.S
 !*/
 !*file
 !LICENSE

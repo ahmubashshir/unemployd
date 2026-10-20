@@ -2,12 +2,14 @@ TARGET  ?=
 CC      := $(TARGET)gcc
 STRIP   := $(TARGET)strip
 BIN     := unemployd
-OBJS    := unemployd.o nolibc.o
+MACHINE := $(shell $(CC) -dumpmachine|cut -d- -f1)
+OBJS    := unemployd.o nolibc.o arch/$(MACHINE).o
 
+ASFLAGS   +=  -fno-pie -fno-plt
 CFLAGS    += -Os -s -ffreestanding \
 				-fno-stack-protector \
 				-fno-asynchronous-unwind-tables \
-				-fno-unwind-tables -fno-pie \
+				-fno-unwind-tables -fno-pie -fno-plt \
 				-ffunction-sections -fdata-sections \
 				-fno-builtin \
 				-Wa,--noexecstack
@@ -15,12 +17,11 @@ CFLAGS    += -Os -s -ffreestanding \
 LDFLAGS   += -Wl,--gc-sections -static -no-pie -fuse-ld=bfd \
 				-nostdlib -nostartfiles \
 				-Wl,--build-id=none \
-				-L arch/lib \
 				-Wl,-z,now -Wl,-T,discard.ld
 
 all: $(BIN).stripped
 
-$(BIN): $(OBJS) | crt1
+$(BIN): $(OBJS)
 
 $(OBJS): Makefile
 %.stripped: %
@@ -28,9 +29,5 @@ $(OBJS): Makefile
 
 clean:
 	$(RM) $(BIN) $(BIN).stripped $(OBJS)
-	@$(MAKE) -C arch/lib clean
-
-crt1:
-	@$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" -C arch/lib
 
 .PHONY: all clean crt1

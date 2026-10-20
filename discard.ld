@@ -1,5 +1,4 @@
 /* vim: ft=c */
-STARTUP(rcrt1.o)
 ENTRY(_start)
 SECTIONS
 {
