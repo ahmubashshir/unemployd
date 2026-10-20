@@ -5,6 +5,7 @@
 !*.h
 !*.S
 !*.sed
+!*.sh
 !*/
 !*file
 !LICENSE

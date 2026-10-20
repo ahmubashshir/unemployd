@@ -1,0 +1,8 @@
+#!/bin/sh
+test -d arch || exit 0
+: "${GITHUB_OUTPUT:=/dev/stdout}"
+
+sed -nE '/^\/\/@/s#//@#linux/#p' arch/*.S |
+	sort -u |
+	paste -sd, - |
+	xargs -r printf 'value=%s\n' >> "$GITHUB_OUTPUT"

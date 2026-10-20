@@ -1,3 +1,4 @@
+//@riscv64
 #include "section.h"
 
 _start:

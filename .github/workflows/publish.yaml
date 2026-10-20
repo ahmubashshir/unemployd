@@ -71,6 +71,10 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: platforms
+      id: platforms
+      run: sh ./arch/platforms.sh
+
     - name: build-push
       uses: docker/build-push-action@v7
       with:
@@ -79,7 +83,7 @@ jobs:
         pull: true
         file: Containerfile
         provenance: true
-        platforms: linux/amd64,linux/arm64,linux/riscv64
+        platforms: ${{ steps.platforms.outputs.value }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
 
