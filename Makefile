@@ -13,6 +13,8 @@ CFLAGS    += -Os -s -ffreestanding \
 				-ffunction-sections -fdata-sections \
 				-fno-builtin \
 				-Wa,--noexecstack
+WARNFLAGS += -Wall -Wextra -Wuninitialized -Wmaybe-uninitialized -Wno-unused-parameter
+CFLAGS    += $(WARNFLAGS)
 
 LDFLAGS   += -Wl,--gc-sections -static -no-pie -fuse-ld=bfd \
 				-nostdlib -nostartfiles \
