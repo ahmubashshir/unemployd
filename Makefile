@@ -15,12 +15,12 @@ CFLAGS    += -Os -s -ffreestanding \
 LDFLAGS   += -Wl,--gc-sections -static -no-pie -fuse-ld=bfd \
 				-nostdlib -nostartfiles \
 				-Wl,--build-id=none \
+				-L arch/lib \
 				-Wl,-z,now -Wl,-T,discard.ld
-LOADLIBES += -l:crt1.o
 
 all: $(BIN).stripped
 
-$(BIN): $(OBJS)
+$(BIN): $(OBJS) | crt1
 
 $(OBJS): Makefile
 %.stripped: %
@@ -28,5 +28,9 @@ $(OBJS): Makefile
 
 clean:
 	$(RM) $(BIN) $(BIN).stripped $(OBJS)
+	@$(MAKE) -C arch/lib clean
 
-.PHONY: all clean
+crt1:
+	@$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" -C arch/lib
+
+.PHONY: all clean crt1

@@ -1,7 +1,7 @@
 FROM docker.io/alpine:latest AS builder
 RUN apk add gcc musl-dev make linux-headers
 WORKDIR /src
-COPY --parents=true *.c *.h arch/*.h LSS/*.h discard.ld Makefile /src
+COPY --parents=true *.c *.h arch/* LSS/*.h discard.ld Makefile /src
 RUN make
 
 FROM scratch
