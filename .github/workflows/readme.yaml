@@ -20,6 +20,7 @@ jobs:
 
     - name: sync-readme
       uses: peter-evans/dockerhub-description@v5
+      if: ${{ github.event_name != 'pull_request' && !env.ACT }}
       with:
         username: ${{ github.actor }}
         password: ${{ secrets.DOCKER_TOKEN }}
