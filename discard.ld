@@ -18,6 +18,7 @@ SECTIONS
 
 	. = SEGMENT_START("rodata-segment", ALIGN(CONSTANT (MAXPAGESIZE)) + (. & (CONSTANT (MAXPAGESIZE) - 1)));
 	.rodata				 : { *(.rodata .rodata.* .gnu.linkonce.r.*) }
+	PROVIDE(__global_pointer$ = . + 0x800);
 	.data					 :
 	{
 		*(.data .data.* .gnu.linkonce.d.*)
