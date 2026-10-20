@@ -3,7 +3,7 @@ VARIANT ?=
 CC      := $(TARGET)gcc
 STRIP   := $(TARGET)strip
 BIN     := unemployd
-MACHINE := $(shell $(CC) -dumpmachine|cut -d- -f1)
+MACHINE := $(shell $(CC) -dumpmachine | sed -f arch/filter.sed)
 OBJS    := unemployd.o nolibc.o arch/$(MACHINE).o
 
 ASFLAGS   +=  -fno-pie -fno-plt
