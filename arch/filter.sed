@@ -1,6 +1,7 @@
 # process only if first line
 1{
 	s/-.*$// # discard after first hyphen
+	s/^i[23456]86$/x86/ # normalize x86 family
 	p # print
 }
 d # consume everything
