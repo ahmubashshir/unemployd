@@ -13,10 +13,10 @@ SECTIONS
 		*(SORT(.text.sorted.*))
 		*(.text .stub .text.* .gnu.linkonce.t.*)
 	}
+	.rodata				 : { *(.rodata .rodata.* .gnu.linkonce.r.*) }
 	. = ALIGN(CONSTANT (MAXPAGESIZE));
 
 	. = SEGMENT_START("rodata-segment", ALIGN(CONSTANT (MAXPAGESIZE)) + (. & (CONSTANT (MAXPAGESIZE) - 1)));
-	.rodata				 : { *(.rodata .rodata.* .gnu.linkonce.r.*) }
 	PROVIDE(__global_pointer$ = . + 0x800);
 	.data					 :
 	{
