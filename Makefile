@@ -1,4 +1,5 @@
 TARGET  ?=
+VARIANT ?=
 CC      := $(TARGET)gcc
 STRIP   := $(TARGET)strip
 BIN     := unemployd
@@ -20,6 +21,10 @@ LDFLAGS   += -Wl,--gc-sections -static -no-pie -fuse-ld=bfd \
 				-nostdlib -nostartfiles \
 				-Wl,--build-id=none \
 				-Wl,-z,now -Wl,-T,discard.ld
+
+ifeq ($(MACHINE)/$(VARIANT),x86_64/v2)
+	CFLAGS += -march=x86-64-v2
+endif
 
 all: $(BIN).stripped
 
