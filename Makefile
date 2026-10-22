@@ -21,9 +21,7 @@ LDFLAGS  += -fuse-ld=bfd -static -no-pie \
             -Wl,-z,now \
             -Wl,--build-id=none
 
-ifeq ($(MACHINE)/$(VARIANT),x86_64/v2)
-	CFLAGS += -march=x86-64-v2
-endif
+-include arch/mk/$(MACHINE).mk
 CFLAGS   += -fno-stack-protector \
             -fno-asynchronous-unwind-tables \
             -fno-unwind-tables \
