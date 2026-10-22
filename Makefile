@@ -1,14 +1,13 @@
-include src/mk/helpers.mk
-
 TARGET     ?=
 VARIANT    ?=
 archdirs   ?= yes
 nowarnings ?= no
 verbose    ?= no
-$(eval $(call validate-opt,archdirs,yes no,yes))
-$(eval $(call validate-opt,nowarnings,yes no,no))
-$(eval $(call validate-opt,verbose,yes no,no))
+# V=1 overrides verbose=no
+V          ?= 0
 
+include src/mk/helpers.mk
+### Makefile start ####
 override TARGET := $(if $(TARGET),$(TARGET)-,)
 CC      := $(TARGET)gcc
 STRIP   := $(TARGET)strip
@@ -19,6 +18,13 @@ ifeq ($(MACHINE),)
 $(error Machine type is empty)
 endif
 
+$(eval $(call validate-opt,V,0 1,0))
+$(eval $(call validate-opt,verbose,yes no,no))
+ifeq ($(V),1)
+override verbose := yes
+endif
+
+$(eval $(call validate-opt,archdirs,yes no,yes))
 OBJDIR  := build/$(MACHINE)$(if $(VARIANT),-$(VARIANT))
 OBJS    := $(OBJDIR)/unemployd.o \
            $(OBJDIR)/nolibc.o \
@@ -40,6 +46,7 @@ LDFLAGS  += -fuse-ld=bfd -static -no-pie \
             -Wl,-z,now \
             -Wl,--build-id=none
 
+$(eval $(call validate-opt,nowarnings,yes no,no))
 ifeq ($(nowarnings),no)
 CFLAGS   += $(WARNOPTS)
 endif
