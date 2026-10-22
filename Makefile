@@ -52,8 +52,8 @@ CFLAGS   += -fno-stack-protector \
 
 all: $(BIN).stripped
 
-$(BIN): $(OBJS)
-	$(LINK.o) $(^) -o $@
+$(BIN): src/discard.ld $(OBJS)
+	$(LINK.o) $(OBJS) -o $@
 
 $(OBJDIR)/%.o: src/%.c $(MAKEFILE_LIST) | $(OBJDIR)
 	$(COMPILE.c) -o $@ $<
