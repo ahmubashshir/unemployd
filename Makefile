@@ -1,8 +1,16 @@
-TARGET  ?=
-VARIANT ?=
+include src/mk/helpers.mk
+
+TARGET     ?=
+VARIANT    ?=
+nowarnings ?= no
+$(eval $(call validate-opt,nowarnings,yes no,no))
+
+override TARGET := $(if $(TARGET),$(TARGET)-,)
 CC      := $(TARGET)gcc
 STRIP   := $(TARGET)strip
+
 MACHINE := $(shell $(CC) -dumpmachine | ./arch/mk/filter)
+
 ifeq ($(MACHINE),)
 $(error Machine type is empty)
 endif
@@ -10,10 +18,12 @@ endif
 BIN     := src/unemployd
 OBJS    := src/unemployd.o src/nolibc.o arch/$(MACHINE).o
 
+COMMONS  := -fno-pie -fno-plt -Wa,--noexecstack
 WARNOPTS := -Wall -Wextra -Wuninitialized -Wmaybe-uninitialized -Wno-unused-parameter
-CFLAGS   += -Os -s -ffreestanding -fno-pie -fno-plt -Iinclude
-ASFLAGS  +=  -fno-pie -fno-plt -Iinclude
-CFLAGS   += $(WARNOPTS)
+
+CPPFLAGS += -Iinclude
+CFLAGS   += -Os -ffreestanding $(COMMONS)
+ASFLAGS  += $(COMMONS)
 LDFLAGS  += -fuse-ld=bfd -static -no-pie \
             -nostdlib -nostartfiles \
             -Wl,-T,src/discard.ld \
@@ -21,15 +31,17 @@ LDFLAGS  += -fuse-ld=bfd -static -no-pie \
             -Wl,-z,now \
             -Wl,--build-id=none
 
+ifeq ($(nowarnings),no)
+CFLAGS   += $(WARNOPTS)
+endif
+
 -include arch/mk/$(MACHINE).mk
 CFLAGS   += -fno-stack-protector \
             -fno-asynchronous-unwind-tables \
             -fno-unwind-tables \
             -ffunction-sections \
             -fdata-sections \
-            -fno-builtin \
-            -Wa,--noexecstack
-
+            -fno-builtin
 
 all: $(BIN).stripped
 
