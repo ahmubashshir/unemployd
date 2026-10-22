@@ -2,29 +2,36 @@ TARGET  ?=
 VARIANT ?=
 CC      := $(TARGET)gcc
 STRIP   := $(TARGET)strip
-BIN     := unemployd
-MACHINE := $(shell $(CC) -dumpmachine | sed -f arch/filter.sed)
-OBJS    := unemployd.o nolibc.o arch/$(MACHINE).o
+MACHINE := $(shell $(CC) -dumpmachine | ./arch/mk/filter)
+ifeq ($(MACHINE),)
+$(error Machine type is empty)
+endif
 
-ASFLAGS   +=  -fno-pie -fno-plt
-CFLAGS    += -Os -s -ffreestanding \
-				-fno-stack-protector \
-				-fno-asynchronous-unwind-tables \
-				-fno-unwind-tables -fno-pie -fno-plt \
-				-ffunction-sections -fdata-sections \
-				-fno-builtin \
-				-Wa,--noexecstack
-WARNFLAGS += -Wall -Wextra -Wuninitialized -Wmaybe-uninitialized -Wno-unused-parameter
-CFLAGS    += $(WARNFLAGS)
+BIN     := src/unemployd
+OBJS    := src/unemployd.o src/nolibc.o arch/$(MACHINE).o
 
-LDFLAGS   += -Wl,--gc-sections -static -no-pie -fuse-ld=bfd \
-				-nostdlib -nostartfiles \
-				-Wl,--build-id=none \
-				-Wl,-z,now -Wl,-T,discard.ld
+WARNOPTS := -Wall -Wextra -Wuninitialized -Wmaybe-uninitialized -Wno-unused-parameter
+CFLAGS   += -Os -s -ffreestanding -fno-pie -fno-plt -Iinclude
+ASFLAGS  +=  -fno-pie -fno-plt -Iinclude
+CFLAGS   += $(WARNOPTS)
+LDFLAGS  += -fuse-ld=bfd -static -no-pie \
+            -nostdlib -nostartfiles \
+            -Wl,-T,src/discard.ld \
+            -Wl,--gc-sections \
+            -Wl,-z,now \
+            -Wl,--build-id=none
 
 ifeq ($(MACHINE)/$(VARIANT),x86_64/v2)
 	CFLAGS += -march=x86-64-v2
 endif
+CFLAGS   += -fno-stack-protector \
+            -fno-asynchronous-unwind-tables \
+            -fno-unwind-tables \
+            -ffunction-sections \
+            -fdata-sections \
+            -fno-builtin \
+            -Wa,--noexecstack
+
 
 all: $(BIN).stripped
 

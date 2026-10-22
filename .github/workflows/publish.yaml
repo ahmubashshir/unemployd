@@ -5,13 +5,12 @@ on:
     branches:
     - master
     paths:
-    - '**.h'
-    - '**.c'
-    - '**.ld'
-    - LSS
+    - src/**
+    - include/**
+    - arch/**
     - Makefile
-    - Dockerfile
     - Containerfile
+    - .dockerignore
     - .github/workflows/publish.yaml
 
 jobs:
@@ -73,20 +72,21 @@ jobs:
 
     - name: platforms
       id: platforms
-      run: sh ./arch/platforms.sh
+      run: sh tools/arch/supported
 
     - name: build-push
       uses: docker/build-push-action@v7
       with:
         context: .
-        push: ${{ ! env.ACT }}
+        push: ${{ !env.ACT }}
         pull: true
         file: Containerfile
         provenance: true
         platforms: ${{ steps.platforms.outputs.value }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+        annotations: ${{ steps.meta.outputs.annotations }}
         cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-to: type=gha,mode=max,ignore-error=${{ !!env.ACT }}
 
 # vim: ft=yaml:ts=2:et:

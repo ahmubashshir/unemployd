@@ -1,11 +1,11 @@
 FROM docker.io/alpine:latest AS builder
 RUN apk add gcc musl-dev make linux-headers
-WORKDIR /src
-COPY --parents=true *.c *.h arch/* LSS/*.h discard.ld Makefile /src
+WORKDIR /build
+COPY --parents=true src arch include Makefile /build
 
 ARG TARGETVARIANT
 RUN make -j$(nproc) VARIANT='$(TARGETVARIANT)'
 
 FROM scratch
-COPY --from=builder /src/unemployd.stripped /unemployd
+COPY --from=builder /build/src/unemployd.stripped /unemployd
 ENTRYPOINT ["/unemployd"]

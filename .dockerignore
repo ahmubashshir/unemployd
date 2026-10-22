@@ -1,0 +1,2 @@
+include/LSS/*
+!include/LSS/*.h
