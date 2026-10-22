@@ -21,11 +21,18 @@ endef
 define <space>
  \
 endef
+
 define message
 $(if $(strip $(3)),
-	$(<<<<<<) \
+	$(if $(filter yes,$(verbose)),
+		true,
+		$(<<<<<<)) \
 	"$(1) \
 	$(subst $(<space>)\
 		,\n        $(2) \
 		,$(strip $(3)))")
+endef
+
+define shtrace
+test "$(verbose)" = "yes" && set -x;
 endef

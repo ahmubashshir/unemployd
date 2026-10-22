@@ -4,8 +4,10 @@ TARGET     ?=
 VARIANT    ?=
 archdirs   ?= yes
 nowarnings ?= no
+verbose    ?= no
 $(eval $(call validate-opt,archdirs,yes no,yes))
 $(eval $(call validate-opt,nowarnings,yes no,no))
+$(eval $(call validate-opt,verbose,yes no,no))
 
 override TARGET := $(if $(TARGET),$(TARGET)-,)
 CC      := $(TARGET)gcc
@@ -54,30 +56,30 @@ all: $(BIN).stripped
 
 $(BIN): src/discard.ld $(OBJS)
 	@$(call message,LINK   -o,+,$(@) $(^))
-	@$(LINK.o) $(OBJS) -o $@
+	@$(shtrace)$(LINK.o) $(OBJS) -o $@
 
 $(OBJDIR)/%.o: src/%.c $(MAKEFILE_LIST) | $(OBJDIR)
 	@$(call message,  CC   -o,+,$(@) $(<))
-	@$(COMPILE.c) -o $@ $<
+	@$(shtrace)$(COMPILE.c) -o $@ $<
 
 $(OBJDIR)/%.o: arch/%.S $(MAKEFILE_LIST) | $(OBJDIR)
 	@$(call message,  AS   -o,+,$(@) $(<))
-	@$(COMPILE.S) -o $@ $<
+	@$(shtrace)$(COMPILE.S) -o $@ $<
 
 $(BIN).stripped: $(BIN)
 	@$(call message,STRIP  -o,+,$(@) $(<))
-	@$(STRIP) $< -o $@
+	@$(shtrace)$(STRIP) $< -o $@
 
 $(OBJDIR):
 	@mkdir -p $@
 
 clean:
 	@$(call message,CLEAN   -,-,$(call rwildcard,$(OBJDIR),*))
-	@$(RM) -r $(BINS) $(OBJDIR)
+	@$(shtrace) $(RM) -r $(BINS) $(OBJDIR)
 
 clean-all:
 	@$(call message,CLEAN   -,-,$(call rwildcard,build,*))
-	@$(RM) -r build
+	@$(shtrace)$(RM) -r build
 
 .PHONY: all clean clean-all
 
