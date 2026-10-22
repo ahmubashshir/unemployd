@@ -55,10 +55,10 @@ all: $(BIN).stripped
 $(BIN): $(OBJS)
 	$(LINK.o) $(^) -o $@
 
-$(OBJDIR)/%.o: src/%.c | $(OBJDIR)
+$(OBJDIR)/%.o: src/%.c $(MAKEFILE_LIST) | $(OBJDIR)
 	$(COMPILE.c) -o $@ $<
 
-$(OBJDIR)/%.o: arch/%.S | $(OBJDIR)
+$(OBJDIR)/%.o: arch/%.S $(MAKEFILE_LIST) | $(OBJDIR)
 	$(COMPILE.S) -o $@ $<
 
 $(BIN).stripped: $(BIN)
