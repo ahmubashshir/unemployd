@@ -53,25 +53,31 @@ CFLAGS   += -fno-stack-protector \
 all: $(BIN).stripped
 
 $(BIN): src/discard.ld $(OBJS)
-	$(LINK.o) $(OBJS) -o $@
+	@$(call message,LINK   -o,+,$(@) $(^))
+	@$(LINK.o) $(OBJS) -o $@
 
 $(OBJDIR)/%.o: src/%.c $(MAKEFILE_LIST) | $(OBJDIR)
-	$(COMPILE.c) -o $@ $<
+	@$(call message,  CC   -o,+,$(@) $(<))
+	@$(COMPILE.c) -o $@ $<
 
 $(OBJDIR)/%.o: arch/%.S $(MAKEFILE_LIST) | $(OBJDIR)
-	$(COMPILE.S) -o $@ $<
+	@$(call message,  AS   -o,+,$(@) $(<))
+	@$(COMPILE.S) -o $@ $<
 
 $(BIN).stripped: $(BIN)
-	$(STRIP) $< -o $@
+	@$(call message,STRIP  -o,+,$(@) $(<))
+	@$(STRIP) $< -o $@
 
 $(OBJDIR):
 	@mkdir -p $@
 
 clean:
-	$(RM) -r $(BINS) $(OBJDIR)
+	@$(call message,CLEAN   -,-,$(call rwildcard,$(OBJDIR),*))
+	@$(RM) -r $(BINS) $(OBJDIR)
 
 clean-all:
-	$(RM) -r build
+	@$(call message,CLEAN   -,-,$(call rwildcard,build,*))
+	@$(RM) -r build
 
 .PHONY: all clean clean-all
 
