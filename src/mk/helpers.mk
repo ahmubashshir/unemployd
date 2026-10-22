@@ -34,5 +34,5 @@ $(if $(strip $(3)),
 endef
 
 define shtrace
-test "$(verbose)" = "yes" && set -x;
+test "$(V)" -gt 0 && set -x;
 endef

@@ -2,8 +2,9 @@ TARGET     ?=
 VARIANT    ?=
 archdirs   ?= yes
 nowarnings ?= no
+# verbose=yes enables verbose mode; setting V to 1 or 2 overrides verbose
 verbose    ?= no
-# V=1 overrides verbose=no
+# V=1 enables verbose mode; V=2 makes tool outputs verbose
 V          ?= 0
 
 include src/mk/helpers.mk
@@ -16,12 +17,6 @@ MACHINE := $(shell $(CC) -dumpmachine | ./arch/mk/filter)
 
 ifeq ($(MACHINE),)
 $(error Machine type is empty)
-endif
-
-$(eval $(call validate-opt,V,0 1,0))
-$(eval $(call validate-opt,verbose,yes no,no))
-ifeq ($(V),1)
-override verbose := yes
 endif
 
 $(eval $(call validate-opt,archdirs,yes no,yes))
@@ -49,6 +44,23 @@ LDFLAGS  += -fuse-ld=bfd -static -no-pie \
 $(eval $(call validate-opt,nowarnings,yes no,no))
 ifeq ($(nowarnings),no)
 CFLAGS   += $(WARNOPTS)
+endif
+
+$(eval $(call validate-opt,V,0 1 2,0))
+ifeq ($(V),2)
+CFLAGS   += -v
+ASFLAGS  += -v
+RM       += -v
+STRIP    += -v
+endif
+
+ifneq ($(V),0)
+	override verbose := yes
+else
+$(eval $(call validate-opt,verbose,yes no,no))
+	ifeq ($(verbose)$(V),yes0)
+	override V := 1
+	endif
 endif
 
 -include arch/mk/$(MACHINE).mk
