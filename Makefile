@@ -28,7 +28,7 @@ BINS    := $(BIN) $(BIN).stripped
 COMMONS  := -fno-pie -fno-plt -Wa,--noexecstack
 WARNOPTS := -Wall -Wextra -Wuninitialized -Wmaybe-uninitialized -Wno-unused-parameter
 
-CPPFLAGS += -Iinclude
+CPPFLAGS += -Iinclude -MMD -MP
 CFLAGS   += -Os -ffreestanding $(COMMONS)
 ASFLAGS  += $(COMMONS)
 LDFLAGS  += -fuse-ld=bfd -static -no-pie \
@@ -74,3 +74,5 @@ clean-all:
 	$(RM) -r build
 
 .PHONY: all clean clean-all
+
+-include $(DEPS) # include deps last; they're not that important
