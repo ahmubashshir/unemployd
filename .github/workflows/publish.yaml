@@ -34,6 +34,8 @@ jobs:
     - name: metadata
       uses: docker/metadata-action@v6
       id: meta
+      env:
+        DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       with:
         images: |
           ghcr.io/${{ github.repository }}
