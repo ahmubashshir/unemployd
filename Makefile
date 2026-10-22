@@ -2,7 +2,9 @@ include src/mk/helpers.mk
 
 TARGET     ?=
 VARIANT    ?=
+archdirs   ?= yes
 nowarnings ?= no
+$(eval $(call validate-opt,archdirs,yes no,yes))
 $(eval $(call validate-opt,nowarnings,yes no,no))
 
 override TARGET := $(if $(TARGET),$(TARGET)-,)
@@ -15,8 +17,13 @@ ifeq ($(MACHINE),)
 $(error Machine type is empty)
 endif
 
-BIN     := src/unemployd
-OBJS    := src/unemployd.o src/nolibc.o arch/$(MACHINE).o
+OBJDIR  := build/$(MACHINE)$(if $(VARIANT),-$(VARIANT))
+OBJS    := $(OBJDIR)/unemployd.o \
+           $(OBJDIR)/nolibc.o \
+           $(OBJDIR)/$(MACHINE).o
+DEPS    := $(OBJS:.o=.d)
+BIN     := $(if $(filter yes,$(archdirs)),$(OBJDIR),build)/unemployd
+BINS    := $(BIN) $(BIN).stripped
 
 COMMONS  := -fno-pie -fno-plt -Wa,--noexecstack
 WARNOPTS := -Wall -Wextra -Wuninitialized -Wmaybe-uninitialized -Wno-unused-parameter
@@ -46,12 +53,24 @@ CFLAGS   += -fno-stack-protector \
 all: $(BIN).stripped
 
 $(BIN): $(OBJS)
+	$(LINK.o) $(^) -o $@
 
-$(OBJS): Makefile
-%.stripped: %
+$(OBJDIR)/%.o: src/%.c | $(OBJDIR)
+	$(COMPILE.c) -o $@ $<
+
+$(OBJDIR)/%.o: arch/%.S | $(OBJDIR)
+	$(COMPILE.S) -o $@ $<
+
+$(BIN).stripped: $(BIN)
 	$(STRIP) $< -o $@
 
-clean:
-	$(RM) $(BIN) $(BIN).stripped $(OBJS)
+$(OBJDIR):
+	@mkdir -p $@
 
-.PHONY: all clean crt1
+clean:
+	$(RM) -r $(BINS) $(OBJDIR)
+
+clean-all:
+	$(RM) -r build
+
+.PHONY: all clean clean-all
