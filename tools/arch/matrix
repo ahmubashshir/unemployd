@@ -1,0 +1,53 @@
+#!/bin/sh
+test -d arch || exit 0
+: "${GITHUB_OUTPUT:=/dev/stdout}"
+
+sedscript()
+{
+	cat << 'EOF'
+
+s/^([^%]+)/\1~\1/
+:a
+s#^([^~]*)/([^~]*~)#\1-\2#
+ta
+
+/^[^%]+$/s#$#%docker.io/alpine:edge#
+s#^([^~]+)~([^%]+)%([^%]+)$#@{"name":"linux-\1","platform":"linux/\2","builder":"\3"}@#
+H
+
+${
+	x
+	s/\n//g
+	/^$/q
+	h
+
+	# matrix done
+	s/@@/,/g
+	s/^@/matrix={"include":[/
+	s/@$/]}/
+	p
+
+	# target
+	x
+	s/@@/@\n@/g
+	s#@\{"name":"([^"]*)",[^@]*\}@#@\1@#g
+
+	s/\n//g
+	/^$/q
+	h
+
+	# targets done
+	s/@@/\n/g
+	s/^@/targets<<EOF\n/
+	s/@$/\nEOF/
+	p
+}
+EOF
+}
+
+export LC_ALL=C
+find arch -maxdepth 1 \
+	-type f -name '*.S' \
+	-exec sed -nE 's#^//@##p' '{}' + |
+	sort -u |
+	sed -nE "$(sedscript)" >> "$GITHUB_OUTPUT"
