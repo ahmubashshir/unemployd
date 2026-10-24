@@ -38,6 +38,8 @@ Or install gcc, then run `make`.
    A: Nope! GHCR[^1] too.
  * Q: Should I use it?<br />
    A: If you need a container that does nothing, you've come to the right place.
+ * Q: What architecture does this support?<br />
+   A: Whatever `alpine:edge` supports. We're not picky.
  * Q: Why not just use `sleep infinity`?<br />
    A: You dare want a proper rootfs just to sleep on it?
  * Q: Does it consume resources?<br />
