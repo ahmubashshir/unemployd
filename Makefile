@@ -93,7 +93,7 @@ $(OBJDIR):
 	@mkdir -p $@
 
 clean:
-	@$(call message,CLEAN   -,-,$(call rwildcard,$(OBJDIR),*))
+	@$(call message,CLEAN   -,-,$(call reverse,$(sort $(wildcard $(OBJDIR)/* $(BINS)))))
 	@$(shtrace) $(RM) -r $(BINS) $(OBJDIR)
 
 clean-all:

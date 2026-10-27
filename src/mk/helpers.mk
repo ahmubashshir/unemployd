@@ -36,3 +36,11 @@ endef
 define shtrace
 test "$(V)" -gt 0 && set -x;
 endef
+
+define reverse
+$(if $(wordlist 2,2,$(1)),
+	$(call reverse,
+		$(wordlist 2,$(words $(1)),$(1))) \
+		$(firstword $(1)),
+	$(1))
+endef
