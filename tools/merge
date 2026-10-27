@@ -1,0 +1,45 @@
+#!/bin/bash
+mapfile -t targets <<< "${TARGETS-}"
+mapfile -t labels  <<< "${LABELS-}"
+mapfile -t tags    <<< "${TAGS-}"
+
+set -euo pipefail
+((${#targets[@]} > 0 && ${#labels[@]} > 0)) || {
+	echo "Error: No TARGETS passed"
+	exit 1
+}
+printf '========================================================\n'
+printf 'target  |   %s\n' "${targets[@]}"
+printf '========================================================\n'
+if ((${#tags[@]} == 0)) || [[ -z "${tags[0]}" ]]; then
+	tags=(latest)
+fi
+printf 'tag     |   %s\n' "${tags[@]}"
+printf '========================================================\n'
+for label in "${labels[@]}"; do
+	[[ "$label" == index:* ]] || continue
+	annotations+=(--annotation "${label#index:}")
+	printf 'label   |   %s\n' "${label#index:}"
+done
+printf '===================== MERGE ============================\n'
+mkdir -p "${1:-images}"
+attestations=()
+for target in "${targets[@]}"; do
+	"${0%/*}/oci" merge -o dist "${1:-images}/${target}.tar"
+
+	attestations+=("$target-attestation")
+done
+taglist="$(
+	IFS=,
+	echo "${tags[*]}"
+)"
+
+printf '\n===================== INDEX ============================\n'
+"${0%/*}/oci" index \
+	--tag "$taglist" "${annotations[@]}" \
+	dist "${targets[@]}" "${attestations[@]}"
+
+printf '\n===================== CHECK ============================\n'
+oras manifest fetch \
+	--oci-layout "dist:${tags[0]}" \
+	--pretty

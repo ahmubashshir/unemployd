@@ -1,0 +1,23 @@
+#!/bin/bash
+mapfile -t tags <<< "${TAGS-}"
+if ((${#tags[@]} == 0)) || [[ -z "${tags[0]}" ]]; then
+	tags=(latest)
+fi
+
+taglist="$(
+	IFS=,
+	echo "${tags[*]}"
+)"
+
+set -euo pipefail
+while read -r ref; do
+	[[ "$ref" ]] || continue
+
+	echo "push($ref:$taglist)"
+
+	oras cp --recursive \
+		--from-oci-layout \
+		"dist:${tags[0]}" "$ref:$taglist"
+
+	oras manifest fetch "$ref:${tags[0]}" --pretty
+done <<< "$REFS"

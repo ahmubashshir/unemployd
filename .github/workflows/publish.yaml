@@ -1,21 +1,131 @@
+# vim: ft=yaml:ts=2:et:
 name: publish
 
 on:
   push:
+    tags:
+    - '*'
     branches:
     - master
     paths:
     - src/**
     - include/**
     - arch/**
+    - tools/**
     - Makefile
     - Containerfile
     - .dockerignore
     - .github/workflows/publish.yaml
 
 jobs:
-  build-push:
+  init:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
+    outputs:
+      matrix:  ${{ steps.matrix.outputs.matrix }}
+      targets: ${{ steps.matrix.outputs.targets }}
+      tags:    ${{ steps.meta.outputs.tag-names }}
+      labels:  ${{ steps.meta.outputs.labels }}
+      annotations: ${{ steps.meta.outputs.annotations }}
+    steps:
+    - name: checkout(prepare)
+      uses: actions/checkout@v7
+
+    - name: load(platforms)
+      id: matrix
+      shell: bash
+      run: ./tools/arch/matrix
+
+    - name: load(metadata)
+      uses: docker/metadata-action@v6
+      id: meta
+      env:
+        DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+      with:
+        images: |
+          localhost/${{ github.event.repository.name }}
+        flavor: |
+          latest=true
+        tags: |
+          type=ref,event=branch
+          type=ref,event=tag
+          type=sha
+        labels: &annotations |
+          org.opencontainers.image.title=${{ github.event.repository.name }}
+          org.opencontainers.image.description=${{ github.event.repository.description }}
+          org.opencontainers.image.url=https://github.com/${{ github.repository }}
+          org.opencontainers.image.documentation=https://github.com/${{ github.repository }}
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          org.opencontainers.image.vendor=${{ github.repository_owner }}
+          org.opencontainers.image.authors=${{ github.repository_owner }}
+          org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
+        annotations: *annotations
+
+  build:
+    needs: init
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.init.outputs.matrix) }}
+
+    steps:
+    - name: setup(docker)
+      if: ${{ !env.ACT }}
+      uses: docker/setup-docker-action@v5
+      with:
+        daemon-config: |
+          { "features":
+            { "containerd-snapshotter": true
+            }
+          }
+    - name: setup(qemu-user)
+      if: ${{ !env.ACT }}
+      uses: docker/setup-qemu-action@v4
+      with:
+        platforms: ${{ matrix.platform }}
+
+    - name: checkout(${{ matrix.name }})
+      uses: actions/checkout@v7
+      with:
+        submodules: true
+
+    - name: build(${{ matrix.name }})
+      uses: docker/build-push-action@v7
+      with:
+        context: .
+        push: false
+        pull: true
+        file: Containerfile
+        sbom: true
+        provenance: mode=max
+        tags: localhost/${{ github.event.repository.name }}:latest
+        labels: |
+          org.opencontainers.image.platform=${{ matrix.platform }}
+          ${{ needs.init.outputs.labels }}
+        annotations: ${{ needs.init.outputs.annotations }}
+        platforms: ${{ matrix.platform }}
+        build-args: builder=${{ matrix.builder }}
+        outputs: type=oci,dest=./${{ matrix.name }}.tar,name=${{ matrix.name }}:latest
+        cache-from: type=gha,scope=${{ matrix.name }}
+        cache-to: type=gha,mode=max,scope=${{ matrix.name }},ignore-error=${{ !!env.ACT }}
+
+    - name: put(oci-${{ matrix.name }})
+      uses: actions/upload-artifact@v5
+      with:
+        name: oci-${{ matrix.name }}
+        path: ./${{ matrix.name }}.tar
+        if-no-files-found: error
+        retention-days: 1
+
+  push:
+    runs-on: ubuntu-latest
+    needs:
+    - init
+    - build
+
     if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') }}
 
     permissions:
@@ -25,39 +135,19 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v6
-      with:
-        submodules: true
 
-    - name: setup(buildx)
-      uses: docker/setup-buildx-action@v4
-
-    - name: metadata
-      uses: docker/metadata-action@v6
-      id: meta
-      env:
-        DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+    - name: get(oci-all)
+      uses: actions/download-artifact@v7
       with:
-        images: |
-          ghcr.io/${{ github.repository }}
-          docker.io/${{ github.repository }}
-        flavor: |
-          latest=true
-        tags: |
-          type=ref,event=branch
-          type=ref,event=tag
-          type=sha
-        labels: |
-          org.opencontainers.image.title=${{ github.event.repository.name }}
-          org.opencontainers.image.description=${{ github.event.repository.description }}
-          org.opencontainers.image.url=https://github.com/${{ github.repository }}
-          org.opencontainers.image.documentation=https://github.com/${{ github.repository }}
-          org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          org.opencontainers.image.vendor=${{ github.repository_owner }}
-          org.opencontainers.image.authors=${{ github.repository_owner }}
-          org.opencontainers.image.licenses=GPL-3.0-or-later
+        pattern: oci-*
+        path: ocitree
+        merge-multiple: true
+
+    - name: setup(oras)
+      uses: oras-project/setup-oras@v1
 
     - name: login(docker.io)
-      if: ${{ github.event_name != 'pull_request' && !env.ACT }}
+      if: ${{ !env.ACT }}
       uses: docker/login-action@v4
       with:
         registry: docker.io
@@ -65,30 +155,41 @@ jobs:
         password: ${{ secrets.DOCKER_TOKEN }}
 
     - name: login(ghcr.io)
-      if: ${{ github.event_name != 'pull_request' && !env.ACT }}
+      if: ${{ !env.ACT }}
       uses: docker/login-action@v4
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: platforms
-      id: platforms
-      run: sh tools/arch/supported
-
-    - name: build-push
-      uses: docker/build-push-action@v7
+    - name: login(test-registry)
+      if: ${{ !! env.ACT && env.TEST_REGISTRY != ''}}
+      uses: docker/login-action@v4
       with:
-        context: .
-        push: ${{ !env.ACT }}
-        pull: true
-        file: Containerfile
-        provenance: true
-        platforms: ${{ steps.platforms.outputs.value }}
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        annotations: ${{ steps.meta.outputs.annotations }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max,ignore-error=${{ !!env.ACT }}
+        registry: ${{ env.TEST_REGISTRY }}
+        username: ${{ secrets.TEST_USER }}
+        password: ${{ secrets.TEST_PASS }}
 
-# vim: ft=yaml:ts=2:et:
+    - name: merge(oci)
+      shell: bash
+      env:
+        TARGETS: ${{ needs.init.outputs.targets }}
+        LABELS:  ${{ needs.init.outputs.annotations }}
+        TAGS:    ${{ needs.init.outputs.tags }}
+      run: ./tools/merge ocitree
+
+    - name: publish-test(mergeoci)
+      if:  ${{ env.ACT && env.TEST_REGISTRY != '' }}
+      env:
+        TAGS: ${{ needs.init.outputs.tags }}
+        REFS: ${{ env.TEST_REGISTRY }}/${{ github.event.repository.name }}
+      run: ./tools/push
+
+    - name: publish(mergeoci)
+      if: ${{ ! env.ACT }}
+      env:
+        TAGS: ${{ needs.init.outputs.tags }}
+        REFS: |
+          ghcr.io/${{ github.repository }}
+          docker.io/${{ github.repository }}
+      run: ./tools/push
