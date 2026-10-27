@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+import sys
+import os
+from pathlib import Path
+
+sys.dont_write_bytecode = True
+
+PROJECT_DIR = Path(__file__).resolve().parent / "oci.py"
+sys.path.insert(0, str(PROJECT_DIR))
+
+
+if __name__ == '__main__':
+    __import__('oci').main()
