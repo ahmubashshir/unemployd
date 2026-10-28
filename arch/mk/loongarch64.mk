@@ -1,0 +1,1 @@
+CFLAGS += -mdirect-extern-access
